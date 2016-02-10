@@ -7,7 +7,21 @@ module Validation
         base.extend(ClassMethods)
     end  
 
+    def validate(args)
+        self.class.validate(args: args, rules: self.class.validation_rules)
+    end
+
     module ClassMethods  
+
+        def validation_rules
+            @validation_rules
+        end
+
+        def attr_validate(name, options={})
+            instance_variable_set("@validation_rules", {}) if @validation_rules.nil?
+            @validation_rules[name] = options
+        end
+
         def validate(args: {}, rules: {}, default_rescue: false)
             begin
                 validated_args = ValidationHelper.validate(args: args, rules: rules, default_rescue: default_rescue)
@@ -34,7 +48,7 @@ module Validation
 
                 args.each do |argname,argv|
                     if argrules[argname].has_value_constraint?
-                        assert_type_constraint(argname, argv, argrules[argname])
+                        assert_value_constraint(argname, argv, argrules[argname])
                     elsif argrules[argname].has_type_constraint?
                         assert_type_constraint(argname, argv, argrules[argname])
                     end
@@ -47,12 +61,12 @@ module Validation
                 if rule.has_default?
                     return rule.default
                 end
-                raise ValidationError.new("Missing required argument: " + missing_arg.to_s)
+                raise ValidationError.new("Missing required argument: " + argname.to_s)
             end
 
             def self.assert_value_constraint(argname, argv, rule)
                 if not rule.values.include?(argv)
-                    raise ValidationError.new("Invalid value for argument: " + argname.to_s)
+                    raise ValidationError.new("Invalid value \'" + argv.to_s + "\' for argument: " + argname.to_s)
                 end
             end
 
