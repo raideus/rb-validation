@@ -1,42 +1,46 @@
+require 'minitest/autorun'
 require 'rb-validation'
 
-class Tester
-    include Validation
 
-    attr_validate :foo
-    attr_validate :bar, type: Integer, default: 42
-    attr_validate :baz, values: ["red", "blue", "green"], default: "red"
+class ClassTest < Minitest::Test
+    class TestClass
+        include Validation
+        
+        attr_validate :foo
+        attr_validate :bar, Integer
+        attr_validate :baz, type: String, default: "somevalue"
+        attr_validate :flurb, values: ["red", "blue", "green"], default: "red"
 
-    # @@rules =  {
-    #                     :foo => Object,
-    #                     :bar => {type: Integer, default: 42},
-    #                     :baz => { values: ["red", "blue", "green"], default: "red"}
-    #             }
+        def initialize(args={})
+            @args = validate(args)
+        end
 
-    # def self.rules
-    #     puts @validation_rules
-    # end
+        def args
+            @args
+        end
+    end
 
-    def initialize(args={})
-        @args = validate(args)
-        puts @args
+    def test_empty
+        assert_raises(ValidationError) do 
+            TestClass.new()
+        end
+    end
+
+    def test_default_apply
+        t = TestClass.new(foo: 1, bar: 456)
+        assert_equal t.args, {foo: 1, bar: 456, baz: "somevalue", flurb: "red"}
+    end
+
+    def test_all_present
+        t = TestClass.new(foo: 1, bar: 456, baz: "avalue", flurb: "green")
+        assert_equal t.args, {foo: 1, bar: 456, baz: "avalue", flurb: "green"}
+    end
+
+    def test_float_for_int
+        assert_raises(ValidationError) do 
+            TestClass.new(foo: 1, bar: 456.1)
+        end
     end
 end
 
-t = Tester.new(foo: 1, baz: "green")
-# Tester.rules
 
-args = {foo: 54882}
-rules = {foo: {type: Integer, default: 1}}
-
-puts Validator.validate(args: {}, rules: rules)
-
-
-# args = {foo: 1, bar: "Hello"}
-# rules = {foo: {type: Integer, default: 1}, bar: {type: String}}
-
-# puts Validator.validate(args: args, rules: rules, default_rescue: true)
-
-
-# validator = Validator.new(:mode => :soft)
-# validator.
